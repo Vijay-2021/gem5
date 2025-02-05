@@ -71,6 +71,7 @@ import atexit
 import itertools
 import os
 import sys
+import subprocess 
 
 from os import mkdir, remove, environ, listdir
 from os.path import abspath, dirname, expanduser
@@ -457,6 +458,68 @@ main["BIN_TARGET_ARCH"] = (
     if bin_target_arch.find("Target: aarch64") != -1
     else "unknown"
 )
+
+# Build SimpleSSD library and add it to LIB
+print("Info: Building SimpleSSD.")
+
+jobs = GetOption('num_jobs')
+
+workdir = './build/simplessd'
+drampower = './ext/drampower/src'
+simplessd = './src/dev/storage/simplessd'
+
+workdir = abspath(workdir)
+drampower = abspath(drampower)
+simplessd = abspath(simplessd)
+
+if not isdir(workdir):
+    os.makedirs(workdir, exist_ok=True)
+if not isfile(join(simplessd, 'CMakeLists.txt')):
+    print(termcap.Red + termcap.Bold +
+          "Error: SimpleSSD directory does not exists.\n" +
+          "  Check that you initialized submodule." +
+          termcap.Normal)
+    Exit(1)
+
+# Try cmake3 first
+cmdline = ['cmake3', '-DDRAMPOWER_SOURCE_DIR=' + drampower]
+cmdline.append(simplessd)
+try:
+    ret = subprocess.Popen(cmdline, cwd=workdir).wait()
+except EnvironmentError:
+    ret = 1
+
+    pass
+
+if ret > 0:
+    # Try cmake instead of cmake3
+    cmdline[0] = 'cmake'
+
+    try:
+        ret = subprocess.Popen(cmdline, cwd=workdir).wait()
+    except EnvironmentError:
+        ret = 1
+
+        pass
+
+if ret > 0:
+    print(termcap.Red + termcap.Bold +
+          "Error: Generating build script of SimpleSSD failed.\n" +
+          "  Make sure that you have installed CMake version 3.10 or later." +
+          termcap.Normal)
+
+    Exit(1)
+
+ret = subprocess.Popen(['make', '-j' + str(jobs)],
+                       cwd=workdir).wait()
+
+if ret > 0:
+    print(termcap.Red + termcap.Bold +
+          "Error: Build of SimpleSSD failed." + termcap.Normal)
+    Exit(1)
+
+main.Append(LINKFLAGS=['-L' + workdir])
+main.Append(LIBS=['simplessd', 'mcpat'])
 
 ########################################################################
 #

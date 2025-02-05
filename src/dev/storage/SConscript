@@ -61,7 +61,12 @@ DebugFlag('DiskImageRead')
 DebugFlag('DiskImageWrite')
 DebugFlag('SimpleDisk')
 DebugFlag('SimpleDiskData')
+Source('def.cc')
 
+SimObject('NVMe.py', sim_objects=['NVMeInterface'])
+Source('nvme_interface.cc')
 
+SimObject('SATA.py', sim_objects=['SATAInterface'])
+Source('sata_interface.cc')
 CompoundFlag('DiskImageAll', [ 'DiskImageRead', 'DiskImageWrite' ])
 CompoundFlag('IdeAll', [ 'IdeCtrl', 'IdeDisk' ])

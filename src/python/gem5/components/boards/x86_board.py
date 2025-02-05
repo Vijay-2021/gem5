@@ -55,7 +55,7 @@ from m5.objects import (
     X86SMBiosBiosInformation,
 )
 from m5.util.convert import toMemorySize
-
+from m5.params import *
 from ...components.boards.se_binary_workload import SEBinaryWorkload
 from ...isas import ISA
 from ...resources.resource import AbstractResource
@@ -75,9 +75,10 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
     * Currently, this board's memory is hardcoded to 3GiB.
     * Much of the I/O subsystem is hard coded.
     """
-
+    
     def __init__(
         self,
+        simplessd: dict,
         clk_freq: str,
         processor: AbstractProcessor,
         memory: AbstractMemorySystem,
@@ -89,13 +90,13 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             memory=memory,
             cache_hierarchy=cache_hierarchy,
         )
-
         if self.get_processor().get_isa() != ISA.X86:
             raise Exception(
                 "The X86Board requires a processor using the X86 "
                 f"ISA. Current processor ISA: '{processor.get_isa().name}'."
             )
-
+        
+        
     @overrides(AbstractSystemBoard)
     def _setup_board(self) -> None:
         if self.is_fullsystem():
@@ -119,7 +120,33 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             This is mostly copy-paste from prior X86 FS setups. Some of it
             may not be documented and there may be bugs.
         """
+        
+        
+        if self.simplessd_disable_ide:
+            delattr(self.pc.south_bridge, 'ide')
+        # else:
+            # Disks
+        #    disks = makeCowDisks(mdesc.disks())
+        #    self.pc.south_bridge.ide.disks = disks
 
+        if self.simplessd_interface == 'nvme':
+            self.pc.nvme.SSDConfig = self.simplessd_config
+            self.pc.nvme.InterruptLine = 17
+            self.pc.nvme.InterruptPin = 1
+        elif self.simplessd_interface == 'ocssd':
+            self.pc.nvme.SSDConfig = self.simplessd_config
+            self.pc.nvme.VendorID = 0x1D1D
+            self.pc.nvme.DeviceID = 0x1F1F
+            self.pc.nvme.InterruptLine = 17
+            self.pc.nvme.InterruptPin = 1
+        elif self.simple_ssd_interface == 'sata':
+            self.pc.south_bridge.sata.SSDConfig = self.simplessd_config
+            self.pc.south_bridge.sata.InterruptLine = 18
+            self.pc.south_bridge.sata.InterruptPin = 1
+        else:
+            fatal(
+                "Undefined SimpleSSD interface {}!".format(self.simplessd_interface))
+        
         # Constants similar to x86_traits.hh
         IO_address_space_base = 0x8000000000000000
         pci_config_address_space_base = 0xC000000000000000

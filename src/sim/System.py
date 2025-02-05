@@ -54,6 +54,10 @@ class System(SimObject):
     cxx_header = "sim/system.hh"
     cxx_class = "gem5::System"
 
+    simplessd_config = Param.String("./src/dev/storage/simplessd/config/sample.cfg", "Path to SimpleSSD config file")
+    simplessd_disable_ide = Param.Bool(False, "Should we disable the ide disk")
+    simplessd_interface = Param.String("nvme", "Type of interface  to use")
+    
     system_port = RequestPort("System port")
 
     cxx_exports = [

@@ -28,6 +28,8 @@ from m5.objects.Device import (
     BadAddr,
     IsaFake,
 )
+
+from m5.objects.NVMe import NVMeInterface
 from m5.objects.PciHost import GenericPciHost
 from m5.objects.Platform import Platform
 from m5.objects.SouthBridge import SouthBridge
@@ -89,6 +91,9 @@ class Pc(Platform):
     # A device to handle any other type of unclaimed access.
     bad_addr = BadAddr(pio=default_bus.default)
 
+    # NVMe Interface
+    nvme = NVMeInterface(pci_func=0, pci_dev=5, pci_bus=0)
+    
     def attachIO(self, bus, dma_ports=[]):
         self.south_bridge.attachIO(bus, dma_ports)
         self.com_1.pio = bus.mem_side_ports
@@ -97,5 +102,7 @@ class Pc(Platform):
         self.fake_com_4.pio = bus.mem_side_ports
         self.fake_floppy.pio = bus.mem_side_ports
         self.pci_host.pio = bus.mem_side_ports
-
+        self.nvme.pio = bus.mem_side_ports
+        if dma_ports.count(self.nvme.dma) == 0:
+            self.nvme.dma = bus.cpu_side_ports
         self.default_bus.cpu_side_ports = bus.default
