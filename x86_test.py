@@ -9,6 +9,7 @@ from gem5.components.processors.cpu_types import CPUTypes
 from gem5.resources.resource import obtain_resource
 from gem5.simulate.simulator import Simulator
 from gem5.simulate.exit_event import ExitEvent
+from gem5.resources.resource import BinaryResource, DiskImageResource, KernelResource
 import sys
 sys.path.append("configs")
 import argparse
@@ -93,7 +94,11 @@ board = X86Board(
 # has ended you may inspect `m5out/system.pc.com_1.device` to see the echo
 # output.
 
-command ="echo 'This is running on KVM CPU cores.';" \
+command = "cat /sys/bus/pci/devices/0000:00:04.0/vendor;" \
+        + "cat /sys/bus/pci/devices/0000:00:04.0/device;" \
+        + "cat /sys/bus/pci/devices/0000:00:05.0/vendor;" \
+        + "cat /sys/bus/pci/devices/0000:00:05.0/device;" \
+        + "echo 'Hi from KVM';" \
         + "m5 exit;" \
         + "echo 'This is running on Timing CPU cores.';" \
         + "sleep 1;" \
@@ -106,9 +111,10 @@ command ="echo 'This is running on KVM CPU cores.';" \
 # system.
 
 board.set_kernel_disk_workload(
-    kernel=obtain_resource("x86-linux-kernel-5.4.49",),
-    disk_image=obtain_resource("x86-ubuntu-18.04-img"),
+    kernel=KernelResource(local_path="/home/vijays2/research/thesis/fs_sim/binaries/x86_64-vmlinux-4.9.92"),
+    disk_image=DiskImageResource(local_path="/home/vijays2/research/thesis/fs_sim/disks/x86root.img"),
     readfile_contents=command,
+    kernel_args=["earlyprintk=ttyS0", "console=ttyS0", "root=/dev/sda1", "lpj=7999923"]
 )
 
 simulator = Simulator(

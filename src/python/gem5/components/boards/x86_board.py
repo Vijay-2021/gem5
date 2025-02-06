@@ -245,15 +245,52 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             dest_io_apic_intin=16,
         )
 
+        pci_dev5_inta = X86IntelMPIOIntAssignment(
+            interrupt_type = 'INT',
+            polarity = 'ConformPolarity',
+            trigger = 'ConformTrigger',
+            source_bus_id = 0,
+            source_bus_irq = 0 + (5 << 2),
+            dest_io_apic_id = io_apic.id,
+            dest_io_apic_intin = 17)
+        
+        pci_dev6_inta = X86IntelMPIOIntAssignment(
+                interrupt_type = 'INT',
+                polarity = 'ConformPolarity',
+                trigger = 'ConformTrigger',
+                source_bus_id = 0,
+                source_bus_irq = 0 + (6 << 2),
+                dest_io_apic_id = io_apic.id,
+                dest_io_apic_intin = 18)
         base_entries.append(pci_dev4_inta)
+        base_entries.append(pci_dev5_inta)
+        base_entries.append(pci_dev6_inta)
+        
         pci_dev4_inta_madt = X86ACPIMadtIntSourceOverride(
             bus_source=pci_dev4_inta.source_bus_id,
             irq_source=pci_dev4_inta.source_bus_irq,
             sys_int=pci_dev4_inta.dest_io_apic_intin,
             flags=0,
         )
+        
+        pci_dev5_inta_madt = X86ACPIMadtIntSourceOverride(
+            bus_source=pci_dev5_inta.source_bus_id,
+            irq_source=pci_dev5_inta.source_bus_irq,
+            sys_int=pci_dev5_inta.dest_io_apic_intin,
+            flags=0,
+        )
+        
+        pci_dev6_inta_madt = X86ACPIMadtIntSourceOverride(
+            bus_source=pci_dev6_inta.source_bus_id,
+            irq_source=pci_dev6_inta.source_bus_irq,
+            sys_int=pci_dev6_inta.dest_io_apic_intin,
+            flags=0,
+        )
+        
         madt_entries.append(pci_dev4_inta_madt)
-
+        madt_entries.append(pci_dev5_inta_madt)
+        madt_entries.append(pci_dev6_inta_madt)
+        
         def assignISAInt(irq, apicPin):
             assign_8259_to_apic = X86IntelMPIOIntAssignment(
                 interrupt_type="ExtInt",
