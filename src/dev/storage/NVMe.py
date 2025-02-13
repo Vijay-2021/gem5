@@ -21,6 +21,8 @@ from m5.params import *
 from m5.objects.PciDevice import (
     PciDevice,
     PciIoBar,
+    PciMemBar,
+    PciLegacyIoBar,
 )
 
 class NVMeInterface(PciDevice):
@@ -96,12 +98,12 @@ class NVMeInterface(PciDevice):
     PMCAPCapabilities = 0x0003  # A6    Device Specific Initialization (No) | Version (1.2)
     PMCAPCtrlStatus = 0x0008    # A8    No Soft Reset
 
-    BAR0 = PciIoBar(size='8192B')           # 10    TYPE = 32bit address space
+    BAR0 = PciMemBar(size='8192B')           # 10    TYPE = 32bit address space
     #BAR1 = 0x00000000           # 14    Should be ZERO
     #BAR2 = 0x00000000           # 18    Index/Data pair is not supported
     #BAR3 = 0x00000000           # 1C    Not used (RESERVED)
-    BAR4 = PciIoBar(size='8192B')          # 20    MSI-X Table
-    BAR5 = PciIoBar(size='4096B')          # 24    MSI-X PBA
+    BAR4 = PciMemBar(size='8192B')          # 20    MSI-X Table
+    BAR5 = PciMemBar(size='4096B')          # 24    MSI-X PBA
 
     #BAR0Size = '8192B'  # 8KB (512 queue pairs)
     #BAR4Size = '8192B'  # 8KB for MSI-X 512 vectors

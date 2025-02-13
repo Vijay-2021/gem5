@@ -17,8 +17,8 @@
  * along with SimpleSSD.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __DEV_STORAGE_NVME_INTERFACE_HH__
-#define __DEV_STORAGE_NVME_INTERFACE_HH__
+#ifndef __DEV_STORAGE_SATA_INTERFACE_HH__
+#define __DEV_STORAGE_SATA_INTERFACE_HH__
 
 #include <cinttypes>
 #include <queue>

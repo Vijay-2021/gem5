@@ -95,7 +95,9 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
                 "The X86Board requires a processor using the X86 "
                 f"ISA. Current processor ISA: '{processor.get_isa().name}'."
             )
-        
+        self.simplessd_config = simplessd['config']
+        self.simplessd_disable_ide = simplessd['disable_ide']
+        self.simplessd_interface = simplessd['interface']
         
     @overrides(AbstractSystemBoard)
     def _setup_board(self) -> None:
@@ -111,21 +113,19 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             self._setup_io_devices()
 
             self.m5ops_base = 0xFFFF0000
-
+            
     def _setup_io_devices(self):
         """Sets up the x86 IO devices.
-
         .. note::
 
             This is mostly copy-paste from prior X86 FS setups. Some of it
             may not be documented and there may be bugs.
         """
         
-        
-        if self.simplessd_disable_ide:
-            delattr(self.pc.south_bridge, 'ide')
-        # else:
-            # Disks
+        #if self.simplessd_disable_ide:
+        #    delattr(self.pc.south_bridge, 'ide')
+        #else:
+        #    Disks
         #    disks = makeCowDisks(mdesc.disks())
         #    self.pc.south_bridge.ide.disks = disks
 
@@ -146,17 +146,13 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
         else:
             fatal(
                 "Undefined SimpleSSD interface {}!".format(self.simplessd_interface))
-        
-        # Constants similar to x86_traits.hh
-        IO_address_space_base = 0x8000000000000000
-        pci_config_address_space_base = 0xC000000000000000
-        interrupts_address_space_base = 0xA000000000000000
-        APIC_range_size = 1 << 12
 
         # Setup memory system specific settings.
         if self.get_cache_hierarchy().is_ruby():
+            print("using ruby")
             self.pc.attachIO(self.get_io_bus(), [self.pc.south_bridge.ide.dma])
         else:
+            print("setting up config space manually")
             self.bridge = Bridge(delay="50ns")
             self.bridge.mem_side_port = self.get_io_bus().cpu_side_ports
             self.bridge.cpu_side_port = (
@@ -176,7 +172,7 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
                 ),
                 AddrRange(pci_config_address_space_base, Addr.max),
             ]
-
+            
             self.apicbridge = Bridge(delay="50ns")
             self.apicbridge.cpu_side_port = self.get_io_bus().mem_side_ports
             self.apicbridge.mem_side_port = (
@@ -262,6 +258,7 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
                 source_bus_irq = 0 + (6 << 2),
                 dest_io_apic_id = io_apic.id,
                 dest_io_apic_intin = 18)
+        
         base_entries.append(pci_dev4_inta)
         base_entries.append(pci_dev5_inta)
         base_entries.append(pci_dev6_inta)
@@ -331,10 +328,10 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
         madt = X86ACPIMadt(
             local_apic_address=0, records=madt_entries, oem_id="madt"
         )
-        self.workload.acpi_description_table_pointer.rsdt.entries.append(madt)
+        # self.workload.acpi_description_table_pointer.rsdt.entries.append(madt)
         self.workload.acpi_description_table_pointer.xsdt.entries.append(madt)
         self.workload.acpi_description_table_pointer.oem_id = "gem5"
-        self.workload.acpi_description_table_pointer.rsdt.oem_id = "gem5"
+        # self.workload.acpi_description_table_pointer.rsdt.oem_id = "gem5"
         self.workload.acpi_description_table_pointer.xsdt.oem_id = "gem5"
         entries = [
             # Mark the first megabyte of memory as reserved
@@ -347,7 +344,7 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
                 range_type=1,
             ),
         ]
-
+        
         # Reserve the last 16KiB of the 32-bit address space for m5ops
         entries.append(
             X86E820Entry(addr=0xFFFF0000, size="64KiB", range_type=2)
