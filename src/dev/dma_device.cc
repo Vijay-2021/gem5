@@ -68,8 +68,12 @@ DmaPort::handleRespPacket(PacketPtr pkt, Tick delay)
 {
     // Should always see a response with a sender state.
     assert(pkt->isResponse());
-    warn_if(pkt->isError(), "Response pkt error.");
-
+    if (pkt->isError()) {
+        warn("Response pkt error.");
+        DPRINTF(DMA, "Packet error: Addr=%#x, Command=%s, Size=%lu\n",
+            pkt->getAddr(), pkt->cmd.toString().c_str(), pkt->getSize());
+    
+    }
     // Get the DMA sender state.
     auto *state = dynamic_cast<DmaReqState*>(pkt->senderState);
     assert(state);

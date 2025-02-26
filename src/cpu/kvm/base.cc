@@ -99,7 +99,7 @@ BaseKvmCPU::BaseKvmCPU(const BaseKvmCPUParams &params)
     thread->setStatus(ThreadContext::Halted);
     tc = thread->getTC();
     threadContexts.push_back(tc);
-
+    registerThreadContexts();
     if ((!usePerf) && perfControlledByTimer) {
         panic("KVM: invalid combination of parameters: cannot use "
               "perfControlledByTimer without usePerf\n");

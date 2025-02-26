@@ -173,8 +173,6 @@ class Interrupts : public BaseInterrupts
 
     Tick clockPeriod() const { return clockDomain.clockPeriod(); }
 
-    void requestInterrupt(uint8_t vector, uint8_t deliveryMode, bool level);
-
     int initialApicId = 0;
 
     // Ports for interrupt messages.
@@ -194,6 +192,13 @@ class Interrupts : public BaseInterrupts
   public:
 
     int getInitialApicId() { return initialApicId; }
+
+    /*
+     * Routes MSI/MSI-X
+     */
+    void requestInterrupt(uint8_t vector, uint8_t deliveryMode, bool level);
+    void getID(uint8_t &pid, uint8_t &lid, uint8_t &model);
+
 
     /*
      * Params stuff.

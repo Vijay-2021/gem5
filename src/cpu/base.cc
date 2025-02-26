@@ -220,7 +220,7 @@ BaseCPU::BaseCPU(const Params &p, bool is_checker)
         commitStatptr->ipc = commitStatptr->numInsts / baseStats.numCycles;
         commitStatptr->cpi = baseStats.numCycles / commitStatptr->numInsts;
         commitStats.emplace_back(commitStatptr);
-    }
+    }   
 }
 
 void
@@ -349,7 +349,7 @@ BaseCPU::init()
     }
 
     if (!params().switched_out) {
-        registerThreadContexts();
+        //registerThreadContexts();
 
         verifyMemoryMode();
     }

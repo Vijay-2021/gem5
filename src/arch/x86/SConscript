@@ -63,6 +63,7 @@ Source('remote_gdb.cc', tags='x86 isa')
 Source('tlb.cc', tags='x86 isa')
 Source('types.cc', tags='x86 isa')
 Source('utility.cc', tags='x86 isa')
+Source('msi_handler.cc', tags='x86 isa')
 
 SimObject('X86SeWorkload.py', sim_objects=['X86EmuLinux'], tags='x86 isa')
 SimObject('X86FsWorkload.py',
@@ -77,7 +78,9 @@ SimObject('X86TLB.py', sim_objects=['X86PagetableWalker', 'X86TLB'],
     tags='x86 isa')
 
 SimObject('X86CPU.py', sim_objects=[], tags='x86 isa')
+SimObject('X86MSIHandler.py', sim_objects=['X86MSIHandler'], tags='x86 isa')
 
+DebugFlag('MSI', "X86 MSI Handler debugging", tags='x86 isa')
 DebugFlag('LocalApic', "Local APIC debugging", tags='x86 isa')
 DebugFlag('X86', "Generic X86 ISA debugging", tags='x86 isa')
 DebugFlag('ACPI', "ACPI debugging", tags='x86 isa')

@@ -53,6 +53,7 @@ from m5.objects import (
     X86IntelMPIOIntAssignment,
     X86IntelMPProcessor,
     X86SMBiosBiosInformation,
+    X86MSIHandler,
 )
 from m5.util.convert import toMemorySize
 from m5.params import *
@@ -103,7 +104,9 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
     def _setup_board(self) -> None:
         if self.is_fullsystem():
             self.pc = Pc()
-
+            
+            self.msi_handler = X86MSIHandler()
+            
             self.workload = X86FsLinux()
 
             # North Bridge
@@ -128,7 +131,6 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
         #    Disks
         #    disks = makeCowDisks(mdesc.disks())
         #    self.pc.south_bridge.ide.disks = disks
-
         if self.simplessd_interface == 'nvme':
             self.pc.nvme.SSDConfig = self.simplessd_config
             self.pc.nvme.InterruptLine = 17
@@ -153,6 +155,9 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             self.pc.attachIO(self.get_io_bus(), [self.pc.south_bridge.ide.dma])
         else:
             print("setting up config space manually")
+            self.msi_handler.pio = ( 
+                self.get_cache_hierarchy().get_mem_side_port()
+            )
             self.bridge = Bridge(delay="50ns")
             self.bridge.mem_side_port = self.get_io_bus().cpu_side_ports
             self.bridge.cpu_side_port = (
@@ -166,7 +171,8 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             APIC_range_size = 1 << 12
 
             self.bridge.ranges = [
-                AddrRange(0xC0000000, 0xFFFF0000),
+                AddrRange(0xC0000000, 0xFEE00000 - 1),
+                AddrRange(0xFEF00000, 0xFFFF0000),
                 AddrRange(
                     IO_address_space_base, interrupts_address_space_base - 1
                 ),
@@ -179,6 +185,7 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
                 self.get_cache_hierarchy().get_cpu_side_port()
             )
             self.apicbridge.ranges = [
+                AddrRange(0xFEE00000, 0xFEF00000 - 1),
                 AddrRange(
                     interrupts_address_space_base,
                     interrupts_address_space_base
@@ -196,6 +203,7 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
         ext_entries = []
         # Updated the X86 board with MADT entries.
         madt_entries = []
+        
         for i in range(self.get_processor().get_num_cores()):
             bp = X86IntelMPProcessor(
                 local_apic_id=i,
@@ -206,7 +214,8 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             base_entries.append(bp)
             lapic = X86ACPIMadtLAPIC(acpi_processor_id=i, apic_id=i, flags=1)
             madt_entries.append(lapic)
-
+        
+        
         io_apic = X86IntelMPIOAPIC(
             id=self.get_processor().get_num_cores(),
             version=0x11,
@@ -345,12 +354,27 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             ),
         ]
         
+        # mark the range from the top of physical memory to 0xC0000000 as reserved to force PCI devices to be mapped to the correct range
+        entries.append(X86E820Entry(addr = self.mem_ranges[0].size(),
+            size='%dB' % (0xC0000000 - self.mem_ranges[0].size()),
+            range_type=2))
+        
         # Reserve the last 16KiB of the 32-bit address space for m5ops
         entries.append(
             X86E820Entry(addr=0xFFFF0000, size="64KiB", range_type=2)
         )
 
         self.workload.e820_table.entries = entries
+        lapics = []
+        print("num cores: ", len(self.get_processor().get_cores()))
+        for core in self.get_processor().get_cores():
+            print(type(core.core))
+            core.core.createInterruptController()
+            core.core.connectUncachedPorts((self.get_cache_hierarchy().get_cpu_side_port()), (self.get_cache_hierarchy().get_mem_side_port()))
+            
+            print(len(core.core.interrupts))
+            lapics.append(core.core.interrupts[0])
+        self.msi_handler.lapics = lapics
 
     @overrides(AbstractSystemBoard)
     def has_io_bus(self) -> bool:

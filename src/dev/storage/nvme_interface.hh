@@ -72,6 +72,8 @@ class NVMeInterface : public PciDevice,
   Addr pbaBaseAddress;
   int pbaSize;
 
+  bool msix_called = false;
+  bool msix_finished = false;                      
   // Current Interrupt Mode
   INTERRUPT_MODE mode;
 

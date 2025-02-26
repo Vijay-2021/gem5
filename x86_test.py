@@ -72,7 +72,7 @@ cache_hierarchy = PrivateL1SharedL2CacheHierarchy(
 # Note, by default DDR3_1600 defaults to a size of 8GiB. However, a current
 # limitation with the X86 board is it can only accept memory systems up to 3GB.
 # As such, we must fix the size.
-memory = SingleChannelDDR3_1600("3GiB")
+memory = SingleChannelDDR3_1600("1GiB")
 
 # Here we setup the processor. This is a special switchable processor in which
 # a starting core type and a switch core type must be specified. Once a
@@ -104,19 +104,11 @@ board = X86Board(
 # has ended you may inspect `m5out/system.pc.com_1.device` to see the echo
 # output.
 
-command = "cat /sys/bus/pci/devices/0000:00:04.0/vendor;" \
-        + "cat /sys/bus/pci/devices/0000:00:04.0/device;" \
-        + "cat /sys/bus/pci/devices/0000:00:05.0/vendor;" \
-        + "cat /sys/bus/pci/devices/0000:00:05.0/device;" \
-        + "echo 144d 2001 > /sys/bus/pci/drivers/nvme/new_id;" \
-        + "ls -l /sys/bus/pci/devices/0000:00:05.0/driver;" \
-        + "cat /sys/bus/pci/devices/0000:00:05.0/power_state;" \
-        + "cat /sys/bus/pci/devices/0000:00:05.0/resource;" \
-        + "cat /proc/ioports;" \
-        + "echo 'Finished KVM';" \
+command = "echo 'Finished KVM';" \
+        + "ls;" \
         + "m5 exit;" \
-        + "sleep 1;" \
-        + "echo 'Finished Timing CPU Execution.';" \
+        + "echo 'test long string 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111';" \
+        + "ls;" \
         + "m5 exit;"
 
 # Here we set the Full System workload.

@@ -163,12 +163,12 @@ class PrivateL1SharedL2CacheHierarchy(
                 self.iptw_caches[i].cpu_side, self.dptw_caches[i].cpu_side
             )
 
-            if board.get_processor().get_isa() == ISA.X86:
-                int_req_port = self.membus.mem_side_ports
-                int_resp_port = self.membus.cpu_side_ports
-                cpu.connect_interrupt(int_req_port, int_resp_port)
-            else:
-                cpu.connect_interrupt()
+            # if board.get_processor().get_isa() == ISA.X86:
+            #     int_req_port = self.membus.mem_side_ports
+            #     int_resp_port = self.membus.cpu_side_ports
+            #     cpu.connect_interrupt(int_req_port, int_resp_port)
+            # else:
+            #     cpu.connect_interrupt()
 
         self.l2bus.mem_side_ports = self.l2cache.cpu_side
         self.membus.cpu_side_ports = self.l2cache.mem_side

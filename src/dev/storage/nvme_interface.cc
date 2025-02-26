@@ -18,6 +18,7 @@
  */
 
 #include "dev/storage/nvme_interface.hh"
+#include <iostream> 
 
 #include "mem/packet.hh"
 #include "mem/packet_access.hh"
@@ -34,35 +35,36 @@
 namespace gem5 {
 
 NVMeInterface::NVMeInterface(const Params& p)
-    : PciDevice(p),
-      EventEngine(this),
-      configPath(p.SSDConfig),
-      dmaReadEvent([this]() { dmaReadDone(); }, name()),
-      dmaWriteEvent([this]() { dmaWriteDone(); }, name()),
-      dmaReadPending(false),
+    : PciDevice(p), // initializes this device as a pci device
+      EventEngine(this), // initializes the simplessd event engine
+      configPath(p.SSDConfig), // will be used to setup ssd parameters
+      dmaReadEvent([this]() { dmaReadDone(); }, name()), // not entirely sure what these do, but some sort of callback
+      dmaWriteEvent([this]() { dmaWriteDone(); }, name()), 
+      dmaReadPending(false), // booleans for state keeping
       dmaWritePending(false),
-      interruptStatus(0),
-      oldInterruptStatus(0),
-      mode(INTERRUPT_PIN),
-      statUpdateEvent([this]() { updateStats(); }, name()), 
-      pStats(nullptr)
+      interruptStatus(0), // not sure what this is
+      oldInterruptStatus(0), // not sure what this is either
+      mode(INTERRUPT_PIN), // not sure what this is
+      statUpdateEvent([this]() { updateStats(); }, name()), // some stats stuff
+      pStats(nullptr) 
       {
-  if (p.SSDConfig.size() == 0) {
-    pController = nullptr;
- 
-    return;
-  }
+    if (p.SSDConfig.size() == 0) {
+      pController = nullptr; 
+      return;
+    }
 
-  conf = initSimpleSSDEngine(this, &std::cout, &std::cerr, configPath);
+    conf = initSimpleSSDEngine(this, &std::cout, &std::cerr, configPath);
 
-  pcieGen = (SimpleSSD::PCIExpress::PCIE_GEN)conf.readInt(
-      SimpleSSD::CONFIG_NVME, SimpleSSD::HIL::NVMe::NVME_PCIE_GEN);
-  pcieLane = (uint8_t)conf.readUint(SimpleSSD::CONFIG_NVME,
+    pcieGen = (SimpleSSD::PCIExpress::PCIE_GEN)conf.readInt(
+    SimpleSSD::CONFIG_NVME, SimpleSSD::HIL::NVMe::NVME_PCIE_GEN);
+    pcieLane = (uint8_t)conf.readUint(SimpleSSD::CONFIG_NVME,
                                     SimpleSSD::HIL::NVMe::NVME_PCIE_LANE);
 
-  pController = new SimpleSSD::HIL::NVMe::Controller(this, conf);
-
-  registerExitCallback(releaseSimpleSSDEngine);
+    pController = new SimpleSSD::HIL::NVMe::Controller(this, conf); // create a controller for ssd
+    // it seems that all SSD structures get initialized properly, the issue occurs when the kernel tries to discover the device
+    // kernel and disk image is the same across both
+    // so the dma might not be emualated the same, because the issue occurs with DMA callback
+    registerExitCallback(releaseSimpleSSDEngine);  
 }
 
 NVMeInterface::~NVMeInterface() {
@@ -70,17 +72,20 @@ NVMeInterface::~NVMeInterface() {
   delete[] pStats;
 }
 
+/**
+* Lets the kernel read the config space registers for the NMVe device
+* If we read from below the device specific space, then handle systematically ()
+ */
 Tick NVMeInterface::readConfig(PacketPtr pkt) {
   
   if (!pController) {
-    pkt->makeAtomicResponse();
+    pkt->makeAtomicResponse(); 
 
     return configDelay;
   }
 
   int offset = pkt->getAddr() & PCI_CONFIG_SIZE;
   int size = pkt->getSize();
-  SimpleSSD::info("read config called with %d offset and %d size", offset, size);
   if (offset < PCI_DEVICE_SPECIFIC) {
     return PciDevice::readConfig(pkt);
   }
@@ -117,7 +122,7 @@ Tick NVMeInterface::readConfig(PacketPtr pkt) {
         pkt->setLE<uint16_t>(val);
         break;
       case sizeof(uint32_t):
-        pkt->setLE<uint32_t>(val);
+        pkt->setLE<uint32_t>(val); 
         break;
       default:
         SimpleSSD::warn("nvme_interface: Invalid PCI config read size: %d",
@@ -131,6 +136,15 @@ Tick NVMeInterface::readConfig(PacketPtr pkt) {
   return configDelay;
 }
 
+/***
+* Handles writes to the config space of the NVMe device
+* Base PCI class can write base address registers so make sure we update internal representation if that happens 
+* Otherwise we are either updating PCI internals or MSI/MSI-X base values 
+* PXCAP = PCIe capability register
+* PMCAP = Power management capability register
+* MSICAP = MSI capability register
+* MSIXCAP = MSIX capability register 
+ */
 Tick NVMeInterface::writeConfig(PacketPtr pkt) {
   if (!pController) {
     pkt->makeAtomicResponse();
@@ -273,6 +287,10 @@ Tick NVMeInterface::writeConfig(PacketPtr pkt) {
   return configDelay;
 }
 
+/**
+* Handles I/O reads to the device (timing doesn't seem to be modeled correctly)
+* Will copy the appropriate data to the Packets buffer
+ */
 Tick NVMeInterface::read(PacketPtr pkt) {
   if (!pController) {
     pkt->makeAtomicResponse();
@@ -282,7 +300,6 @@ Tick NVMeInterface::read(PacketPtr pkt) {
 
   Addr addr = pkt->getAddr();
   int size = pkt->getSize();
-  SimpleSSD::info("Nvme read called with addr: %llu and size: %d", addr, size);
   uint8_t *buffer = pkt->getPtr<uint8_t>();
   Tick begin = curTick();
   Tick end = curTick();
@@ -316,6 +333,10 @@ Tick NVMeInterface::read(PacketPtr pkt) {
   return end - begin;
 }
 
+/**
+* Lets us write to completion and submission queues 
+* Also can copy data from buffers into msix table 
+*/
 Tick NVMeInterface::write(PacketPtr pkt) {
   if (!pController) {
     pkt->makeAtomicResponse();
@@ -326,7 +347,6 @@ Tick NVMeInterface::write(PacketPtr pkt) {
   Addr addr = pkt->getAddr();
   int size = pkt->getSize();
   uint8_t *buffer = pkt->getPtr<uint8_t>();
-  SimpleSSD::info("Nvme write called with addr %llu and size %d", addr, size);
   Tick begin = curTick();
   Tick end = curTick();
 
@@ -385,12 +405,23 @@ Tick NVMeInterface::write(PacketPtr pkt) {
   return end - begin;
 }
 
+/***
+* @param addr the address at which the dma write should be done
+* @param size the size of the write to perform
+* @param data the data to write to the given location
+* calls a dma write to a given address with an empty function to be executed after the write completes 
+*/
 void NVMeInterface::writeInterrupt(Addr addr, size_t size, uint8_t *data) {
   static SimpleSSD::DMAFunction empty = [](uint64_t, void *) {};
-
+  if (msix_called && !msix_finished) {
+    SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME, "calling write interrupt with addr: %llu size: %llu data: %s\n", addr, size, data);
+  }
   dmaWrite(addr, size, data, empty, nullptr);
 }
 
+/**
+* 
+*/
 void NVMeInterface::dmaRead(uint64_t addr, uint64_t size, uint8_t *buffer,
                             SimpleSSD::DMAFunction &func, void *context) {
   if (size == 0) {
@@ -468,12 +499,18 @@ void NVMeInterface::dmaWrite(uint64_t addr, uint64_t size, uint8_t *buffer,
   iter.size = size;
   iter.buffer = buffer;
   iter.context = context;
-
+  if (msix_called && !msix_finished) {
+    SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME, "calling dma write with original addr: %llu with dma addr: %llu with size: %llu and buffer: %s\n", iter.addr, pciToDma(iter.addr), iter.size, iter.buffer);
+  }
   if (!dmaWritePending) {
     submitDMAWrite();
   }
 }
 
+/**
+* callback function for DMAWrite
+* If there is more in the queue then this will be called 
+*/
 void NVMeInterface::dmaWriteDone() {
   auto &iter = dmaWriteQueue.front();
   uint64_t tick = curTick();
@@ -483,7 +520,10 @@ void NVMeInterface::dmaWriteDone() {
 
     return;
   }
-
+  if (msix_called && !msix_finished) {
+    SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME, "calling dma write done with original addr: %llu with dma addr: %llu with size: %llu and buffer: %s\n", iter.addr, pciToDma(iter.addr), iter.size, iter.buffer);
+    msix_finished = true;
+  }
   iter.func(tick, iter.context);
   dmaWriteQueue.pop();
   dmaWritePending = false;
@@ -501,7 +541,11 @@ void NVMeInterface::submitDMAWrite() {
   iter.beginAt = curTick();
   iter.finishedAt = iter.beginAt + SimpleSSD::PCIExpress::calculateDelay(
                                        pcieGen, pcieLane, iter.size);
-
+  
+  if (msix_called && !msix_finished) {
+    SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME, "calling submit dma write with original addr: %llu with dma addr: %llu with size: %llu and buffer: %s\n", iter.addr, pciToDma(iter.addr), iter.size, iter.buffer);
+  }
+  
   if (iter.buffer) {
     DmaDevice::dmaWrite(pciToDma(iter.addr), iter.size, &dmaWriteEvent,
                         iter.buffer);
@@ -511,8 +555,10 @@ void NVMeInterface::submitDMAWrite() {
   }
 }
 
+/***
+* This is a SimpleSSD function
+*/
 void NVMeInterface::updateInterrupt(uint16_t iv, bool post) {
-  SimpleSSD::info("Update interrupt called with iv %u and %u", iv, post);
   switch (mode) {
     case INTERRUPT_PIN:
       if (post) {
@@ -565,6 +611,10 @@ void NVMeInterface::updateInterrupt(uint16_t iv, bool post) {
       MSIXTable &table = msix_table.at(iv);
 
       if (!(table.fields.vec_ctrl & 0x0000001) && post) {
+        if (!msix_called) {
+          SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME, "table addr lo: %lu and addr hi: %lu and message: %lu", table.fields.addr_lo, table.fields.addr_hi, table.fields.msg_data);
+          msix_called = true;
+        }
         writeInterrupt(
             ((uint64_t)table.fields.addr_hi << 32) | table.fields.addr_lo,
             sizeof(uint32_t), (uint8_t *)&table.fields.msg_data);
@@ -573,7 +623,6 @@ void NVMeInterface::updateInterrupt(uint16_t iv, bool post) {
                               "INTR    | MSI-X sent | vector %d", iv);
       }
     }
-
     break;
   }
 }

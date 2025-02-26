@@ -173,6 +173,7 @@ class BaseCPU(ClockedObject):
     _uncached_interrupt_request_ports = []
 
     def createInterruptController(self):
+        print("this is being called!")
         self.interrupts = [
             self.ArchInterrupts() for i in range(self.numThreads)
         ]
