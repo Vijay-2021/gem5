@@ -365,14 +365,11 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
         )
 
         self.workload.e820_table.entries = entries
+        
         lapics = []
-        print("num cores: ", len(self.get_processor().get_cores()))
         for core in self.get_processor().get_cores():
-            print(type(core.core))
             core.core.createInterruptController()
             core.core.connectUncachedPorts((self.get_cache_hierarchy().get_cpu_side_port()), (self.get_cache_hierarchy().get_mem_side_port()))
-            
-            print(len(core.core.interrupts))
             lapics.append(core.core.interrupts[0])
         self.msi_handler.lapics = lapics
 

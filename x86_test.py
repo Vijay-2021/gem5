@@ -72,7 +72,7 @@ cache_hierarchy = PrivateL1SharedL2CacheHierarchy(
 # Note, by default DDR3_1600 defaults to a size of 8GiB. However, a current
 # limitation with the X86 board is it can only accept memory systems up to 3GB.
 # As such, we must fix the size.
-memory = SingleChannelDDR3_1600("1GiB")
+memory = SingleChannelDDR3_1600("2GiB")
 
 # Here we setup the processor. This is a special switchable processor in which
 # a starting core type and a switch core type must be specified. Once a
@@ -104,12 +104,13 @@ board = X86Board(
 # has ended you may inspect `m5out/system.pc.com_1.device` to see the echo
 # output.
 
-command = "echo 'Finished KVM';" \
-        + "ls;" \
-        + "m5 exit;" \
-        + "echo 'test long string 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111';" \
-        + "ls;" \
-        + "m5 exit;"
+# command = "echo 'running stream add';" \
+#         + "cd /home/STREAM;" \
+#         + "ls;" \
+#         + "./stream_add;" \
+#         + "echo 'finished stream add';"
+
+command = ""
 
 # Here we set the Full System workload.
 # The `set_workload` function for the X86Board takes a kernel, a disk image,
@@ -121,7 +122,7 @@ board.set_kernel_disk_workload(
     kernel=KernelResource(local_path="/home/vijays2/research/thesis/fs_sim/binaries/x86_64-vmlinux-4.9.92"),
     disk_image=DiskImageResource(local_path="/home/vijays2/research/thesis/fs_sim/disks/x86root.img"),
     readfile_contents=command,
-    kernel_args=["earlyprintk=ttyS0", "console=ttyS0", "root=/dev/sda1", "lpj=7999923", "acpi=off", "noibrs", "noibpb", "nopti", "nospectre_v2", "nospectre_v1", "l1tf=off", "nospec_store_bypass_disable", "no_stf_barrier", "mds=off", "mitigations=off"]
+    kernel_args=["earlyprintk=ttyS0", "console=ttyS0", "root=/dev/nvme0n1p1", "lpj=7999923", "acpi=off", "noibrs", "noibpb", "nopti", "nospectre_v2", "nospectre_v1", "l1tf=off", "nospec_store_bypass_disable", "no_stf_barrier", "mds=off", "mitigations=off"]
 )
 
 simulator = Simulator(

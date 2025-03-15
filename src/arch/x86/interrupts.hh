@@ -191,7 +191,9 @@ class Interrupts : public BaseInterrupts
 
   public:
 
-    int getInitialApicId() { return initialApicId; }
+    int getInitialApicId() {
+        return initialApicId; 
+    }
 
     /*
      * Routes MSI/MSI-X
