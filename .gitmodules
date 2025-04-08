@@ -1,3 +1,4 @@
+
 [submodule "src/dev/storage/simplessd"]
 	path = src/dev/storage/simplessd
-	url = https://github.com/SimpleSSD/SimpleSSD.git
+	url = https://github.com/Vijay-2021/SimpleSSD.git
