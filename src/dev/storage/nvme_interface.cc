@@ -370,10 +370,10 @@ Tick NVMeInterface::write(PacketPtr pkt) {
       uiTemp = (uiTemp >> 1);          // Queue ID
 
       if (uiMask) {  // Completion Queue
-        pController->ringCQHeadDoorbell(uiTemp, uiDoorbell, end);
+        pController->ringCQHeadDoorbell(uiTemp, uiDoorbell, end); // add command to completion queue
       }
       else {  // Submission Queue
-        pController->ringSQTailDoorbell(uiTemp, uiDoorbell, end);
+        pController->ringSQTailDoorbell(uiTemp, uiDoorbell, end); // add command to submission queue, while true loop in controller checks when to update queue, calls checkQueue, uses some methods to read host dram
       }
     }
     else {
