@@ -53,6 +53,7 @@ void X86MSIHandler::handleInterrupt(PacketPtr pkt) {
 
   DPRINTF(MSI, "Got DMA write to Message Address Register %X\n",
           (uint32_t)addr);
+  DPRINTF(MSI, "Packet has size: %X\n", (uint32_t)pkt->getSize());
 
   uint8_t dstID = (addr & 0x000FF000) >> 12; // Destination ID
   bool rh = addr & 0x00000008;               // Redirection Hint
@@ -64,7 +65,7 @@ void X86MSIHandler::handleInterrupt(PacketPtr pkt) {
   uint8_t vector = data & 0x00FF;      // Interrupt Vector
 
   uint8_t pid, lid, model;
-
+  DPRINTF(MSI, "Continuing with DSTID %d\n", (uint32_t) dstID);
   if (rh & dm) {
     // Logical Destination Mode
     // Redirect to only those processors that are part of the logical group
@@ -118,7 +119,6 @@ void X86MSIHandler::handleInterrupt(PacketPtr pkt) {
     } else {
       for (auto iter = lapics.begin(); iter != lapics.end(); iter++) {
         (*iter)->getID(pid, lid, model);
-
         if (pid == dstID) {
           DPRINTF(MSI, "Send Interrupt to Local APIC %d\n", pid);
           (*iter)->requestInterrupt(vector, mode, level);

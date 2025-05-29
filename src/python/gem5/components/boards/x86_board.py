@@ -370,8 +370,8 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
         for core in self.get_processor().get_cores():
             core.core.createInterruptController()
             core.core.connectUncachedPorts((self.get_cache_hierarchy().get_cpu_side_port()), (self.get_cache_hierarchy().get_mem_side_port()))
-            lapics.append(core.core.interrupts[0])
-        self.msi_handler.lapics = lapics
+            lapics.extend(core.core.interrupts)
+        self.msi_handler.lapics = lapics 
 
     @overrides(AbstractSystemBoard)
     def has_io_bus(self) -> bool:

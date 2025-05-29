@@ -519,7 +519,7 @@ if ret > 0:
     Exit(1)
 
 main.Append(LINKFLAGS=['-L' + workdir])
-main.Append(LIBS=['simplessd', 'mcpat'])
+main.Append(LIBS=['simplessd', 'mcpat', 'riscv_em_lib'])
 
 ########################################################################
 #

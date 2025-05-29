@@ -1,4 +1,5 @@
 build
+output/
 gem5_build
 parser.out
 parsetab.py

@@ -119,10 +119,10 @@ command = ""
 # system.
 
 board.set_kernel_disk_workload(
-    kernel=KernelResource(local_path="/home/vijays2/research/thesis/fs_sim/binaries/x86_64-vmlinux-4.9.92"),
+    kernel=KernelResource(local_path="/home/vijays2/research/thesis/fs_sim/binaries/x86_64-vmlinux-5.4.49-v3"),
     disk_image=DiskImageResource(local_path="/home/vijays2/research/thesis/fs_sim/disks/x86root.img"),
     readfile_contents=command,
-    kernel_args=["earlyprintk=ttyS0", "console=ttyS0", "root=/dev/nvme0n1p1", "lpj=7999923", "acpi=off", "noibrs", "noibpb", "nopti", "nospectre_v2", "nospectre_v1", "l1tf=off", "nospec_store_bypass_disable", "no_stf_barrier", "mds=off", "mitigations=off"]
+    kernel_args=["earlyprintk=ttyS0", "console=ttyS0", "root=/dev/nvme0n1p1", "lpj=7999923", "acpi=off", "noibrs", "noibpb", "nopti", "nospectre_v2", "nospectre_v1", "l1tf=off", "nospec_store_bypass_disable", "no_stf_barrier", "mds=off", "mitigations=off", "intel_iommu=off", "irqaffinity=2"]
 )
 
 simulator = Simulator(

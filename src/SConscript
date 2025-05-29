@@ -550,6 +550,7 @@ for extra_dir in extras_dir_list:
 
 # Include SimpleSSD root path
 env.Append(CPPPATH=[Dir('#src/dev/storage/simplessd')])
+env.Append(CPPPATH=[Dir('#src/dev/storage/simplessd/cpu/riscv_em')])
 
 ########################################################################
 #
