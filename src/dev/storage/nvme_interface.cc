@@ -60,7 +60,7 @@ NVMeInterface::NVMeInterface(const Params& p)
     pcieLane = (uint8_t)conf.readUint(SimpleSSD::CONFIG_NVME,
                                     SimpleSSD::HIL::NVMe::NVME_PCIE_LANE);
 
-    pController = new SimpleSSD::HIL::NVMe::Controller(this, conf); // create a controller for ssd
+    pController = new SimpleSSD::HIL::NVMe::Controller(this, simCPU, conf); // create a controller for ssd
     // it seems that all SSD structures get initialized properly, the issue occurs when the kernel tries to discover the device
     // kernel and disk image is the same across both
     // so the dma might not be emualated the same, because the issue occurs with DMA callback
@@ -694,7 +694,5 @@ void NVMeInterface::updateStats() {
 
   schedule(statUpdateEvent, curTick() + STAT_UPDATE_PERIOD);
 }
-
-
 
 } //namespace gem5
