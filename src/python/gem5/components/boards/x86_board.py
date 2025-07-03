@@ -359,7 +359,7 @@ class X86Board(AbstractSystemBoard, KernelDiskWorkload, SEBinaryWorkload):
             size='%dB' % (0xC0000000 - self.mem_ranges[0].size()),
             range_type=2))
         
-        # Reserve the last 16KiB of the 32-bit address space for m5ops
+        # Reserve the last 64KiB of the 32-bit address space for m5ops
         entries.append(
             X86E820Entry(addr=0xFFFF0000, size="64KiB", range_type=2)
         )

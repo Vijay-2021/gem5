@@ -4,6 +4,8 @@
 #include <linux/nvme_ioctl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include "gem5/m5ops.h"
+#include <m5_mmap.h>
 
 #define NVME_IOCTL_ADMIN_CMD _IOWR('N', 0x41, struct nvme_admin_cmd)
 
@@ -23,8 +25,12 @@ int main(int argc, char **argv) {
     cmd.data_len = 0;  // Replace with data length if needed
     cmd.cdw10 = 0;     // Set as required
     cmd.cdw11 = 0;     // Set as required
-
-    int err = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+    m5op_addr = 0xFFFF0000;
+    map_m5_mem();
+    m5_work_begin_addr(0,0);
+    printf("before switching CPU\n");
+    m5_switch_cpu_addr();
+    /**int err = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
     if (err < 0) {
         perror("ioctl");
         close(fd);
@@ -53,7 +59,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    printf("Command completed successfully.\n");
+    printf("Command completed successfully.\n");*/
+    printf("Hello slow from O3 core??\n");
     close(fd);
     return 0;
 }

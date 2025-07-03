@@ -72,7 +72,7 @@ cache_hierarchy = PrivateL1SharedL2CacheHierarchy(
 # Note, by default DDR3_1600 defaults to a size of 8GiB. However, a current
 # limitation with the X86 board is it can only accept memory systems up to 3GB.
 # As such, we must fix the size.
-memory = SingleChannelDDR3_1600("2GiB")
+memory = SingleChannelDDR3_1600("3GiB")
 
 # Here we setup the processor. This is a special switchable processor in which
 # a starting core type and a switch core type must be specified. Once a
@@ -81,9 +81,8 @@ memory = SingleChannelDDR3_1600("2GiB")
 # we start with KVM cores to simulate the OS boot, then switch to the Timing
 # cores for the command we wish to run after boot.
 
-processor = SimpleSwitchableProcessor(
-    starting_core_type=CPUTypes.KVM,
-    switch_core_type=CPUTypes.TIMING,
+processor = SimpleProcessor(
+    cpu_type=CPUTypes.KVM,
     num_cores=4,
     isa=ISA.X86,
 )
@@ -110,7 +109,18 @@ board = X86Board(
 #         + "./stream_add;" \
 #         + "echo 'finished stream add';"
 
-command = ""
+command = """#!/bin/sh
+mount -o remount,rw /
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PS1='\\u@\\h:\\w\\$ '
+
+if [ -x /bin/bash ]; then
+    exec /bin/bash --norc --noprofile
+else
+    exec /bin/sh
+fi
+"""
 
 # Here we set the Full System workload.
 # The `set_workload` function for the X86Board takes a kernel, a disk image,
@@ -120,20 +130,13 @@ command = ""
 
 board.set_kernel_disk_workload(
     kernel=KernelResource(local_path="/home/vijays2/research/thesis/fs_sim/binaries/x86_64-vmlinux-4.9.92"),
-    disk_image=DiskImageResource(local_path="/home/vijays2/research/thesis/fs_sim/disks/x86root.img"),
+    disk_image=DiskImageResource(local_path="/home/vijays2/research/thesis/fs_sim/disks/x86-root.img"),
     readfile_contents=command,
     kernel_args=["earlyprintk=ttyS0", "console=ttyS0", "root=/dev/nvme0n1p1", "lpj=7999923", "acpi=off", "noibrs", "noibpb", "nopti", "nospectre_v2", "nospectre_v1", "l1tf=off", "nospec_store_bypass_disable", "no_stf_barrier", "mds=off", "mitigations=off"]
 )
 
 simulator = Simulator(
     board=board,
-    on_exit_event={
-        # Here we want override the default behavior for the first m5 exit
-        # exit event. Instead of exiting the simulator, we just want to
-        # switch the processor. The 2nd 'm5 exit' after will revert to using
-        # default behavior where the simulator run will exit.
-        ExitEvent.EXIT : (func() for func in [processor.switch]),
-    },
 )
 
 simulator.run()

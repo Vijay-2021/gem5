@@ -60,7 +60,7 @@ NVMeInterface::NVMeInterface(const Params& p)
     pcieLane = (uint8_t)conf.readUint(SimpleSSD::CONFIG_NVME,
                                     SimpleSSD::HIL::NVMe::NVME_PCIE_LANE);
 
-    pController = new SimpleSSD::HIL::NVMe::Controller(this, simCPU, conf); // create a controller for ssd
+    pController = new SimpleSSD::HIL::NVMe::Controller(this, conf); // create a controller for ssd
     // it seems that all SSD structures get initialized properly, the issue occurs when the kernel tries to discover the device
     // kernel and disk image is the same across both
     // so the dma might not be emualated the same, because the issue occurs with DMA callback
@@ -196,9 +196,9 @@ Tick NVMeInterface::writeConfig(PacketPtr pkt) {
 
       vectors = (uint16_t)powf(2, (msicap.mc & 0x0070) >> 4);
 
-      SimpleSSD::debugprint(
-          SimpleSSD::LOG_HIL_NVME, "INTR    | MSI %s | %d vectors",
-          mode == INTERRUPT_PIN ? "disabled" : "enabled", vectors);
+      //SimpleSSD::debugprint(
+      //    SimpleSSD::LOG_HIL_NVME, "INTR    | MSI %s | %d vectors",
+      //    mode == INTERRUPT_PIN ? "disabled" : "enabled", vectors);
     }
     else if (offset == MSICAP_BASE + 4 &&
              size == sizeof(uint32_t)) {  // MSICAP Message Address
@@ -231,9 +231,9 @@ Tick NVMeInterface::writeConfig(PacketPtr pkt) {
 
       vectors = (msixcap.mxc & 0x07FF) + 1;
 
-      SimpleSSD::debugprint(
-          SimpleSSD::LOG_HIL_NVME, "INTR    | MSI-X %s | %d vectors",
-          mode == INTERRUPT_PIN ? "disabled" : "enabled", vectors);
+      //SimpleSSD::debugprint(
+      //    SimpleSSD::LOG_HIL_NVME, "INTR    | MSI-X %s | %d vectors",
+      //    mode == INTERRUPT_PIN ? "disabled" : "enabled", vectors);
     }
     else if (offset == PXCAP_BASE + 8 &&
              size == sizeof(uint16_t)) {  // PXCAP Device Capabilities
@@ -575,14 +575,14 @@ void NVMeInterface::updateInterrupt(uint16_t iv, bool post) {
       if (interruptStatus == 0) {
         intrClear();
 
-        SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME,
-                              "INTR    | Pin Interrupt Clear");
+        //SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME,
+       //                       "INTR    | Pin Interrupt Clear");
       }
       else {
         intrPost();
 
-        SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME,
-                              "INTR    | Pin Interrupt Post");
+        //SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME,
+        //                      "INTR    | Pin Interrupt Post");
       }
 
       oldInterruptStatus = interruptStatus;
@@ -601,8 +601,8 @@ void NVMeInterface::updateInterrupt(uint16_t iv, bool post) {
         writeInterrupt(((uint64_t)msicap.mua << 32) | msicap.ma,
                        sizeof(uint32_t), (uint8_t *)&data);
 
-        SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME,
-                              "INTR    | MSI sent | vector %d", iv);
+        //SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME,
+        //                      "INTR    | MSI sent | vector %d", iv);
       }
     }
 
@@ -619,8 +619,8 @@ void NVMeInterface::updateInterrupt(uint16_t iv, bool post) {
             ((uint64_t)table.fields.addr_hi << 32) | table.fields.addr_lo,
             sizeof(uint32_t), (uint8_t *)&table.fields.msg_data);
 
-        SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME,
-                              "INTR    | MSI-X sent | vector %d", iv);
+        //SimpleSSD::debugprint(SimpleSSD::LOG_HIL_NVME,
+        //                      "INTR    | MSI-X sent | vector %d", iv);
       }
     }
     break;
@@ -694,5 +694,7 @@ void NVMeInterface::updateStats() {
 
   schedule(statUpdateEvent, curTick() + STAT_UPDATE_PERIOD);
 }
+
+
 
 } //namespace gem5
